@@ -15,6 +15,41 @@ use core::{
 };
 
 
+/// A [`char`] that is known not to equal zero.
+///
+/// This enables some memory layout optimization.
+/// For example, `Option<NonZeroChar>` is the same size as `char`:
+///
+/// ```rust
+/// # use nonzero_char::NonZeroChar;
+/// use std::mem::size_of;
+/// assert_eq!(size_of::<Option<NonZeroChar>>(), size_of::<NonZeroChar>());
+/// ```
+///
+/// # Layout
+///
+/// `NonZeroChar` is guaranteed to have the same layout and bit validity as `char`
+/// with the exception that `0` is not a valid instance.
+///
+/// Currently implemented using `NonZeroU32`,
+/// there are not as many invalid values as real `char`
+///
+/// `Option<NonZeroChar>` is guaranteed to be compatible with `char`,
+/// including in FFI.
+///
+/// Thanks to the [null pointer optimization],
+/// `NonZeroChar` and `Option<NonZeroChar>`
+/// are guaranteed to have the same size and alignment:
+///
+/// ```
+/// # use std::mem::{size_of, align_of};
+/// # use nonzero_char::NonZeroChar;
+///
+/// assert_eq!(size_of::<NonZeroChar>(), size_of::<Option<NonZeroChar>>());
+/// assert_eq!(align_of::<NonZeroChar>(), align_of::<Option<NonZeroChar>>());
+/// ```
+///
+/// [null pointer optimization]: core::option#representation
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct NonZeroChar(NonZeroU32);
@@ -376,6 +411,8 @@ impl NonZeroChar {
     /// `char`, possibly creating an invalid one.
     ///
     /// # Safety
+    ///
+    /// The value must not be zero ('\0').
     ///
     /// This function is unsafe, as it may construct invalid `char` values.
     ///
@@ -1388,7 +1425,7 @@ impl NonZeroChar {
     ///
     /// ```
     /// # use nonzero_char::NonZeroChar;
-    /// let mut ascii = 'a';
+    /// let mut ascii = NonZeroChar::new('a').unwrap();
     ///
     /// ascii.make_ascii_uppercase();
     ///
@@ -1416,7 +1453,7 @@ impl NonZeroChar {
     ///
     /// ```
     /// # use nonzero_char::NonZeroChar;
-    /// let mut ascii = 'A';
+    /// let mut ascii = NonZeroChar::new('A').unwrap();
     ///
     /// ascii.make_ascii_lowercase();
     ///
