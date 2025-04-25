@@ -51,6 +51,7 @@ macro_rules! impl_fromiters {
     };
 }
 
+/// Try from byte errors
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TryFromByteError(());
 #[allow(deprecated)]

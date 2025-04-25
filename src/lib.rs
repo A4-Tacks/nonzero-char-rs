@@ -143,9 +143,11 @@ impl NonZeroChar {
     ///
     /// # Safety
     /// The value must not be zero ('\0').
+    #[track_caller]
     pub const unsafe fn new_unchecked(ch: char) -> Self {
         #[cfg(debug_assertions)]
-        debug_assert!(Self::new(ch).is_some());
+        debug_assert!(Self::new(ch).is_some(),
+                     "NonZeroChar::new_unchecked() by zero");
         unsafe {
             Self(NonZeroU32::new_unchecked(ch as u32))
         }
@@ -267,21 +269,24 @@ impl NonZeroChar {
     ///
     /// ```
     /// # use nonzero_char::NonZeroChar;
-    /// // 𝄞mus<invalid>ic<invalid>
+    /// // 𝄞mus<invalid>ic<invalid><nul>x
     /// let v = [
     ///     0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0xDD1E, 0x0069, 0x0063, 0xD834,
+    ///     0x0000, 0x0078,
     /// ];
     ///
     /// assert_eq!(
-    ///     char::decode_utf16(v)
-    ///         .map(|r| r.map_err(|e| e.unpaired_surrogate()))
+    ///     NonZeroChar::decode_utf16(v)
+    ///         .map(|r| r.map(|ch| ch.get()).map_err(|e| e.code()))
     ///         .collect::<Vec<_>>(),
     ///     vec![
     ///         Ok('𝄞'),
     ///         Ok('m'), Ok('u'), Ok('s'),
     ///         Err(0xDD1E),
     ///         Ok('i'), Ok('c'),
-    ///         Err(0xD834)
+    ///         Err(0xD834),
+    ///         Err(0x0000),
+    ///         Ok('x'),
     ///     ]
     /// );
     /// ```
@@ -290,21 +295,22 @@ impl NonZeroChar {
     ///
     /// ```
     /// # use nonzero_char::NonZeroChar;
-    /// // 𝄞mus<invalid>ic<invalid>
+    /// // 𝄞mus<invalid>ic<invalid><nul>x
     /// let v = [
     ///     0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0xDD1E, 0x0069, 0x0063, 0xD834,
+    ///     0x0000, 0x0078,
     /// ];
     ///
     /// assert_eq!(
-    ///     char::decode_utf16(v)
-    ///        .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
+    ///     NonZeroChar::decode_utf16(v)
+    ///        .map(|r| r.unwrap_or(NonZeroChar::REPLACEMENT_CHARACTER))
     ///        .collect::<String>(),
-    ///     "𝄞mus�ic�"
+    ///     "𝄞mus�ic��x" // '\0' -> '�'
     /// );
     /// ```
     #[inline]
-    pub fn decode_utf16<I: IntoIterator<Item = u16>>(iter: I) -> DecodeUtf16<I::IntoIter> {
-        char::decode_utf16(iter)
+    pub fn decode_utf16<I: IntoIterator<Item = u16>>(iter: I) -> iter::DecodeUtf16<I::IntoIter> {
+        iter::DecodeUtf16 { iter: char::decode_utf16(iter) }
     }
 
     /// Converts a `NonZeroChar` to a `NonZeroU32`

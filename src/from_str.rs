@@ -12,6 +12,7 @@ enum ParseNonZeroCharErrorInner {
     ByZeroError,
 }
 
+/// Parse str errors, created by the [`NonZeroChar::from_str`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseNonZeroCharError {
     error: ParseNonZeroCharErrorInner,
@@ -43,6 +44,7 @@ impl Display for ParseNonZeroCharError {
         self.description().fmt(f)
     }
 }
+
 impl FromStr for NonZeroChar {
     type Err = ParseNonZeroCharError;
 

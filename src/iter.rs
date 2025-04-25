@@ -1,4 +1,6 @@
 use crate::NonZeroChar;
+use core::error::Error;
+use core::fmt::Display;
 use core::ops::RangeInclusive;
 use core::iter::FusedIterator;
 
@@ -10,6 +12,10 @@ fn pack(x: Option<char>) -> Option<NonZeroChar> {
     })
 }
 
+/// This struct is created by the [`iter_inclusive`] method on [`NonZeroChar`].
+/// See its documentation for more.
+///
+/// [`iter_inclusive`]: NonZeroChar::iter_inclusive
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RangeInclusiveIter {
     pub(crate) iter: <RangeInclusive<char> as IntoIterator>::IntoIter,
@@ -83,6 +89,77 @@ impl DoubleEndedIterator for RangeInclusiveIter {
 }
 
 impl FusedIterator for RangeInclusiveIter { }
+
+/// Decode Utf16 errors, created by the [`DecodeUtf16::next`]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DecodeUtf16Error {
+    error: Option<core::char::DecodeUtf16Error>,
+}
+
+impl From<core::char::DecodeUtf16Error> for DecodeUtf16Error {
+    fn from(error: core::char::DecodeUtf16Error) -> Self {
+        Self { error: error.into() }
+    }
+}
+
+impl DecodeUtf16Error {
+    /// Returns the unpaired surrogate which caused this error.
+    pub fn unpaired_surrogate(&self) -> Option<u16> {
+        self.error.as_ref()
+            .map(|e| e.unpaired_surrogate())
+    }
+
+    /// Returns error code
+    pub fn code(&self) -> u16 {
+        self.unpaired_surrogate()
+            .unwrap_or(0)
+    }
+}
+
+impl Display for DecodeUtf16Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if let Some(e) = &self.error {
+            write!(f, "unpaired surrogate found: {:x}", e.unpaired_surrogate())
+        } else {
+            write!(f, "decode char by zero")
+        }
+    }
+}
+
+impl Error for DecodeUtf16Error {
+    fn description(&self) -> &str {
+        if self.error.is_some() {
+            "unpaired surrogate found"
+        } else {
+            "decode char by zero"
+        }
+    }
+}
+
+/// This struct is created by the [`decode_utf16`] method on [`NonZeroChar`].
+/// See its documentation for more.
+///
+/// [`decode_utf16`]: NonZeroChar::decode_utf16
+#[derive(Debug, Clone)]
+pub struct DecodeUtf16<I: Iterator<Item = u16>> {
+    pub(crate) iter: core::char::DecodeUtf16<I>,
+}
+
+impl<I: Iterator<Item = u16>> Iterator for DecodeUtf16<I> {
+    type Item = Result<NonZeroChar, DecodeUtf16Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ch = self.iter.next()?;
+        ch.map_err(Into::into)
+            .and_then(|ch| NonZeroChar::new(ch)
+                .ok_or(DecodeUtf16Error { error: None }))
+            .into()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
 
 #[test]
 fn iter_all() {

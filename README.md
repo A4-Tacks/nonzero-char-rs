@@ -1,5 +1,9 @@
 Implement NonZeroChar, like NonZeroU32
 
+- Implemented of all char stable methods (most of forwarding)
+
+# Examples
+
 ```rust
 use nonzero_char::NonZeroChar;
 
