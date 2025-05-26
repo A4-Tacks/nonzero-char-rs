@@ -28,7 +28,7 @@ use core::{
 ///
 /// # Layout
 ///
-/// `NonZeroChar` is guaranteed to have the same layout and bit validity as `char`
+/// `NonZeroChar` is guaranteed to have the same layout as `char`
 /// with the exception that `0` is not a valid instance.
 ///
 /// Currently implemented using `NonZeroU32`,
