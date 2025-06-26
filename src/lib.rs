@@ -143,7 +143,7 @@ impl NonZeroChar {
     ///
     /// # Safety
     /// The value must not be zero ('\0').
-    #[track_caller]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub const unsafe fn new_unchecked(ch: char) -> Self {
         #[cfg(debug_assertions)]
         debug_assert!(Self::new(ch).is_some(),
