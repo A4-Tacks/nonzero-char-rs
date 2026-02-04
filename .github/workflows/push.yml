@@ -1,0 +1,31 @@
+name: Rust test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - toolchain: stable
+          - toolchain: nightly
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup default ${{ matrix.toolchain }}
+      - run: rustup component add clippy
+      - run: cargo +${{ matrix.toolchain }} doc
+      - run: cargo +${{ matrix.toolchain }} test --no-fail-fast
+      - run: cargo +${{ matrix.toolchain }} clippy -- -D warnings
+      - run: rm -v Cargo.lock
+      - run: cargo +${{ matrix.toolchain }} doc
+      - run: cargo +${{ matrix.toolchain }} test --no-fail-fast
+      - run: cargo +${{ matrix.toolchain }} clippy -- -D warnings
+
