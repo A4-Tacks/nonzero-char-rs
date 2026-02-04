@@ -1,4 +1,4 @@
-Implement `NonZeroChar`, like `NonZeroU32`
+Implement `NonZeroChar`, wrapped `NonZero<char>`
 
 - Implemented of all char stable methods (most of forwarding)
 

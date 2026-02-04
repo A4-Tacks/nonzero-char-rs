@@ -11,7 +11,7 @@ use core::{
     char::*,
     cmp::Ordering,
     fmt::{self, Debug, Display},
-    num::NonZeroU32,
+    num::{NonZero, NonZeroU32},
 };
 
 
@@ -31,9 +31,6 @@ use core::{
 /// `NonZeroChar` is guaranteed to have the same layout as `char`
 /// with the exception that `0` is not a valid instance.
 ///
-/// Currently implemented using `NonZeroU32`,
-/// there are not as many invalid values as real `char`
-///
 /// `Option<NonZeroChar>` is guaranteed to be compatible with `char`,
 /// including in FFI.
 ///
@@ -52,7 +49,7 @@ use core::{
 /// [null pointer optimization]: core::option#representation
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct NonZeroChar(NonZeroU32);
+pub struct NonZeroChar(NonZero<char>);
 
 impl Debug for NonZeroChar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -132,7 +129,7 @@ impl NonZeroChar {
     /// assert_eq!(NonZeroChar::new('\0').map(NonZeroChar::get), None);
     /// ```
     pub const fn new(ch: char) -> Option<Self> {
-        match NonZeroU32::new(ch as u32) {
+        match NonZero::new(ch) {
             Some(ch) => Some(Self(ch)),
             None => None,
         }
@@ -149,14 +146,14 @@ impl NonZeroChar {
         debug_assert!(Self::new(ch).is_some(),
                      "NonZeroChar::new_unchecked() by zero");
         unsafe {
-            Self(NonZeroU32::new_unchecked(ch as u32))
+            Self(NonZero::new_unchecked(ch))
         }
     }
 
     /// Returns the contained value as a primitive type.
     pub const fn get(self) -> char {
         // SAFETY: Assume on create this type
-        unsafe { char::from_u32_unchecked(self.0.get()) }
+        self.0.get()
     }
 
     /// Like `self..=max`
@@ -324,7 +321,8 @@ impl NonZeroChar {
     /// assert_eq!(ch.as_nonzero_u32(), num);
     /// ```
     pub fn as_nonzero_u32(self) -> NonZeroU32 {
-        self.0
+        let ch = self.0.get();
+        unsafe { NonZeroU32::new_unchecked(ch as u32) }
     }
 
     /// Converts a `NonZeroChar` to a `u32`
@@ -332,7 +330,6 @@ impl NonZeroChar {
     /// # Examples
     /// ```
     /// # use nonzero_char::NonZeroChar;
-    /// # use core::num::NonZeroU32;
     /// let ch = NonZeroChar::new('\x1b').unwrap();
     /// assert_eq!(ch.as_u32(), 0x1b);
     /// ```
@@ -440,7 +437,7 @@ impl NonZeroChar {
     #[inline]
     pub const unsafe fn from_u32_unchecked(i: u32) -> Self {
         unsafe {
-            Self(NonZeroU32::new_unchecked(i))
+            Self(NonZero::new_unchecked(char::from_u32_unchecked(i)))
         }
     }
 
