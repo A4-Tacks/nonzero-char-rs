@@ -17,6 +17,7 @@ jobs:
         include:
           - toolchain: stable
           - toolchain: nightly
+          - toolchain: 1.89 # msrv
     steps:
       - uses: actions/checkout@v4
       - run: rustup default ${{ matrix.toolchain }}
