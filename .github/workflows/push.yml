@@ -13,6 +13,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - toolchain: stable
@@ -20,6 +21,7 @@ jobs:
           - toolchain: 1.89 # msrv
     steps:
       - uses: actions/checkout@v4
+      - run: pwd
       - run: rustup override set ${{ matrix.toolchain }}
       - run: rustup component add clippy
       - run: cargo doc
@@ -29,4 +31,3 @@ jobs:
       - run: cargo doc
       - run: cargo test --no-fail-fast
       - run: cargo clippy -- -D warnings
-
